@@ -1,0 +1,82 @@
+// use prisma-8
+
+model User {
+  id                Int       @id @default(autoincrement())
+  studentId         String    @unique
+  email             String    @unique
+  passwordHash      String
+  name              String
+  role              String    @default("STUDENT")
+
+  bookingWindowDays Int       @default(7)
+  isSuspended       Boolean   @default(false)
+  suspendedUntil    TimestamptzString?
+  noShowCount       Int       @default(0)
+
+  bookings          Booking[]
+  waitlistEntries   WaitlistEntry[]
+
+  createdAt         TimestamptzString @default(now())
+  updatedAt         temporal.updatedAtString()
+}
+
+model Slot {
+  id          Int       @id @default(autoincrement())
+  startTime   TimestamptzString
+  endTime     TimestamptzString
+  capacity    Int       @default(30)
+  isActive    Boolean   @default(true)
+
+  bookings    Booking[]
+  waitlist    WaitlistEntry[]
+
+  createdAt   TimestamptzString @default(now())
+  updatedAt   temporal.updatedAtString()
+
+  @@index([startTime])
+}
+
+model Booking {
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  slotId           Int
+
+  status           String    @default("CONFIRMED")
+  attendanceStatus String    @default("PENDING")
+
+  bookedAt         TimestamptzString @default(now())
+  cancelledAt      TimestamptzString?
+  attendedAt       TimestamptzString?
+
+  user             User      @relation(fields: [userId], references: [id])
+  slot             Slot      @relation(fields: [slotId], references: [id])
+
+  @@unique([userId, slotId])
+  @@index([slotId])
+  @@index([userId])
+}
+
+model WaitlistEntry {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  slotId      Int
+  position    Int
+  status      String    @default("WAITING")
+
+  joinedAt    TimestamptzString @default(now())
+  claimedAt   TimestamptzString?
+
+  user        User      @relation(fields: [userId], references: [id])
+  slot        Slot      @relation(fields: [slotId], references: [id])
+
+  @@unique([userId, slotId])
+  @@index([slotId, position])
+}
+
+model GymSetting {
+  id          Int       @id @default(autoincrement())
+  key         String    @unique
+  value       String
+
+  updatedAt   temporal.updatedAtString()
+}
